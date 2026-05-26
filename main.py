@@ -1,3 +1,5 @@
+import redis
+
 import os
 import json
 import requests
@@ -106,6 +108,24 @@ def save_report(report: str, model_slug: str, timestamp: str) -> Path:
     report_file.write_text(report)
     return report_file
 
+
+def save_run_to_redis(timestamp: str, reports: dict[str, str]) -> None:
+    """Store one run's reports in Redis and update the run index."""
+    r = redis.from_url(os.environ["REDIS_URL"])
+    generated_at = datetime.now(ZoneInfo("America/New_York")).isoformat()
+
+    run_data = {
+        "timestamp": timestamp,
+        "generated_at": generated_at,
+        "reports": reports,
+    }
+    r.set(f"run:{timestamp}", json.dumps(run_data))
+
+    # Prepend timestamp to the index list (newest first)
+    r.lpush("runs:index", timestamp)
+    print(f"Saved run {timestamp} to Redis")
+
+
 def main():
     timestamp = datetime.now(ZoneInfo("America/New_York")).strftime("%Y%m%d_%H%M%S")
     models = [
@@ -119,15 +139,19 @@ def main():
     context = gather_context(timestamp)
     system_prompt = load_system_prompt()
 
+    reports = {}
     for model in models:
         print(f"\nGenerating report with {model}...")
         try:
             report = generate_report(system_prompt, context, model)
-            report_path = save_report(report, model, timestamp)
-            print(f"Report saved to {report_path}")
+            save_report(report, model, timestamp)
+            reports[model] = report
         except Exception as e:
             print(f"FAILED for {model}: {e}")
             continue
+
+    if reports:
+        save_run_to_redis(timestamp, reports)
 
     print(f"\nAll done. Reports for timestamp {timestamp}")
 
