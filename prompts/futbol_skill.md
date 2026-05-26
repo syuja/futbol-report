@@ -5,14 +5,7 @@
 - If a section can't be supported by the search results, omit it rather than filling with placeholders.
 - The examples below show FORMAT only — do not copy their content into the output.
 
----
-
-name: /soccer command trigger
-description: When user says /soccer, generate a 7-day soccer schedule and send it via Telegram in a specific compact format
-type: feedback
----
-
-When the user says "/soccer", generate a soccer schedule for the next 7 days and send it via Telegram.
+Generate a soccer schedule for the next 7 days based on the provided search results.
 
 **What to include (in priority order):**
 
@@ -26,6 +19,12 @@ When the user says "/soccer", generate a soccer schedule for the next 7 days and
    season, do not list its matches. Pivot to whatever is active.
 4. Always include 3-5 KEY UPDATES at the end — these can be results, transfers,
    injuries, qualifying news, or storylines, depending on what's happening.
+5. During off-season or international breaks when club fixtures are sparse,
+   lead with transfer news, signings, and rumors instead. An empty fixture
+   list is fine if the updates section is rich.
+6. Always surface managerial/coaching changes when present — new appointments,
+   sackings, or interim hires. These materially affect team performance and
+   belong in the Key Updates section with the affected team noted.
 
 **Format rules:**
 

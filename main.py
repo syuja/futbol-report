@@ -26,6 +26,13 @@ def build_search_queries() -> list[str]:
         f"Serie A standings {month_year} points relegation Champions League qualification",
         f"Serie A results past weekend {month_year}",
 
+        # Transfer window / off-season news
+        f"Serie A transfer news rumors {month_year}",
+        f"biggest football transfers confirmed {month_year}",
+        # Manager / coaching changes
+        f"Serie A manager sacked appointed coaching change {month_year}",
+        f"football manager changes news {month_year}",
+
         # Champions League — covers semis, final, and post-season news
         f"Champions League fixtures {date_range}",
         f"Champions League final 2026 schedule preview",
