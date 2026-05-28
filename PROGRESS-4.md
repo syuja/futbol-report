@@ -1,5 +1,10 @@
 # Job Search Progress Tracker
 
+CI/CD for github <== scan and update accordingly
+use open scanner
+should i extract the openrouter and make my own inference router?
+vast.ai serverless?
+
 > Last updated: May 26, 2026 (~9:15 AM ET)
 > Maintained as a working doc — update at the end of each session.
 
@@ -35,7 +40,7 @@
 - Domain registered, GitHub repo, template forked (`tailwind-nextjs-starter-blog`), metadata updated
 - Deployed to Vercel with custom domain + SSL
 - Cleared template example content
-- Site live at https://samiryuja.dev ✅
+- Site live at <https://samiryuja.dev> ✅
 
 ### Futbol Report — generator (May 20–21)
 
@@ -63,7 +68,7 @@
 - `app/projects/futbol-report/VoteButton.tsx` — client vote button under each report
 - Added `@/lib/*` path alias to `tsconfig.json`
 - Linked the project in `data/projectsData.ts` — now reachable from the Projects tab
-- All live at https://samiryuja.dev/projects/futbol-report ✅
+- All live at <https://samiryuja.dev/projects/futbol-report> ✅
 
 ### Models in current lineup
 
@@ -134,36 +139,47 @@ After Serie A's season ended, fixture queries returned little. Adding transfer-n
 Captured so they aren't lost. None of these block progress — they're the backlog.
 
 ### Voting integrity (deduplication)
+
 Current voting is per-page-load only: the button disables after one click, but a refresh lets the same person vote again. It's a rough signal, not a rigorous poll. A real fix needs cookies, localStorage, or fingerprinting to enforce one vote per visitor. Acceptable for v1; revisit if the eval data needs to be trustworthy.
 
 ### Report cell sizing / layout
+
 The four reports are different lengths, so the 2x2 grid is really a 2-column stack. Options for later polish: cap cell height with internal scroll, or switch to a tabbed layout (click a model to view). Cosmetic only — not urgent.
 
 ### `main.py` refactor
+
 `main.py` is currently one flat file doing search, generation, local saving, Redis writing, and orchestration. Fine at current size. When doing the Lambda migration, split into modules (e.g. `search.py`, `models.py`, `storage.py`, `main.py`) — the reorganization belongs *with* that migration, not before it. Do NOT refactor ahead of need.
 
 ### Thin search runs
+
 When Brave returns weak context, every model produces a sparse report. Two fixes, both work with Brave (no provider swap needed):
+
 - (a) Retry with broader queries on thin returns
 - (b) Fetch full page content for top results instead of snippets (Firecrawl or `requests` + readability)
 Option (b) is the better long-term fix — snippets are inherently lossy.
 
 ### `getVotes` uses Redis `KEYS`
+
 `getVotes` uses the `KEYS` command, which scans the whole keyspace. Fine at current scale (a handful of runs). If this ever grew large, switch to a `SCAN`-based approach or store vote totals in a hash per run.
 
 ### Page revalidation
+
 The comparison page is `force-dynamic` — reads Redis on every request. Works fine. A later optimization is scheduled revalidation (ISR) so it re-renders periodically instead of per-request. Optimization only; not needed now.
 
 ### Cron on harlie still running
+
 The old system fires every 3 days. Doesn't conflict with the new pipeline but should be turned off once the new system handles Telegram delivery.
 
 ### No Telegram delivery yet
+
 The new system writes to Redis and disk but does not send to Telegram. Required before harlie can be retired.
 
 ### Custom email address
+
 Deferred twice during setup. Optional polish — set up a custom site email when convenient. Not on the critical path.
 
 ### Projects page has template placeholder text
+
 The /projects list page still shows the template tagline "Showcase your projects
 with a hero image (16 x 9)". Swap for real copy (e.g. "Things I've built"). Lives
 in app/projects/page.tsx. Cosmetic, quick.

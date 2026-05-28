@@ -2,3 +2,5 @@
 logs/
 .DS_Store
 .DS_Store
+build/
+lambda.zip
