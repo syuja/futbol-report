@@ -1,8 +1,5 @@
 #!/bin/bash
-# Builds a Lambda deployment zip for the futbol-report generator.
-# Run from the futbol-report project root: ./build_lambda.sh
-
-set -e  # stop on any error
+set -e
 
 echo "Cleaning previous build..."
 rm -rf build lambda.zip
@@ -15,12 +12,13 @@ cp main.py build/
 cp -r prompts build/
 
 echo "Installing dependencies (Linux-targeted for Lambda)..."
-uv pip install \
+python3 -m pip install \
   --target build \
-  --python-platform x86_64-manylinux2014 \
+  --platform manylinux2014_x86_64 \
+  --implementation cp \
   --python-version 3.12 \
-  --only-binary :all: \
-  "pydantic-core==2.46.4" \
+  --only-binary=:all: \
+  --upgrade \
   openai requests redis
 
 echo "Zipping..."
