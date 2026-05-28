@@ -21,6 +21,10 @@ OPENROUTER_API_KEY = os.environ["OPENROUTER_API_KEY"]
 # regardless of the working directory (Lambda runs from elsewhere).
 BASE_DIR = Path(__file__).parent
 
+# How many run timestamps to keep in runs:index. Older entries beyond this
+# cap are trimmed after each new run is saved.
+MAX_RUNS_IN_INDEX = 50
+
 
 def build_search_queries() -> list[str]:
     """Build queries covering near-term fixtures across active competitions."""
@@ -95,6 +99,28 @@ def generate_report(system_prompt: str, context: str, model: str) -> str:
     return response.choices[0].message.content
 
 
+def _prune_stale_index_entries(r: redis.Redis) -> None:
+    """Remove any timestamps from runs:index whose run:* key no longer exists."""
+    timestamps = [
+        ts.decode() if isinstance(ts, bytes) else ts
+        for ts in r.lrange("runs:index", 0, -1)
+    ]
+    if not timestamps:
+        return
+
+    # Batch all EXISTS checks into one round-trip
+    pipe = r.pipeline()
+    for ts in timestamps:
+        pipe.exists(f"run:{ts}")
+    exists_flags = pipe.execute()
+
+    # Remove the ones that came back missing
+    for ts, exists in zip(timestamps, exists_flags):
+        if not exists:
+            r.lrem("runs:index", 0, ts)
+            print(f"Pruned stale index entry: {ts}")
+
+
 def save_run_to_redis(timestamp: str, reports: dict[str, str]) -> None:
     """Store one run's reports in Redis and update the run index."""
     r = redis.from_url(os.environ["REDIS_URL"])
@@ -107,6 +133,8 @@ def save_run_to_redis(timestamp: str, reports: dict[str, str]) -> None:
     }
     r.set(f"run:{timestamp}", json.dumps(run_data))
     r.lpush("runs:index", timestamp)
+    _prune_stale_index_entries(r)
+    r.ltrim("runs:index", 0, MAX_RUNS_IN_INDEX - 1)
     print(f"Saved run {timestamp} to Redis")
 
 
