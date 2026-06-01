@@ -24,33 +24,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  osv-scanner:
+  dependency-scan:
     name: Dependency Vulnerability Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Scan uv.lock for known CVEs
-        uses: google/osv-scanner-action@v1
-        continue-on-error: true  # severity gate enforced in the next step
-        with:
-          scan-args: |-
-            --lockfile=uv.lock
-          results-file-path: osv-results.sarif
-
-      - name: Enforce HIGH/CRITICAL severity gate
-        run: |
-          if [ ! -f osv-results.sarif ]; then
-            echo "::error::osv-scanner produced no output — scan may have failed"
-            exit 1
-          fi
-          high=$(jq '[.runs[].results[] | select(.level == "error")] | length' osv-results.sarif || echo 0)
-          low=$(jq '[.runs[].results[] | select(.level == "warning" or .level == "note")] | length' osv-results.sarif || echo 0)
-          if [ "$low" -gt 0 ]; then
-            echo "::warning::$low lower-severity CVE(s) found — review the Security tab"
-          fi
-          if [ "$high" -gt 0 ]; then
-            echo "::error::$high HIGH/CRITICAL CVE(s) found — resolve before merging"
-            exit 1
-          fi
-          echo "No HIGH/CRITICAL vulnerabilities found."
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
