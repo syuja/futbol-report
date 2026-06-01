@@ -136,7 +136,42 @@ def save_run_to_redis(timestamp: str, reports: dict[str, str]) -> None:
     _prune_stale_index_entries(r)
     r.ltrim("runs:index", 0, MAX_RUNS_IN_INDEX - 1)
     print(f"Saved run {timestamp} to Redis")
+    
+def send_to_telegram(timestamp: str, report: str) -> None:
+    """Send the primary report to Telegram with a link to the site.
 
+    Fails silently — Redis is the source of truth; Telegram is just notification.
+    """
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        print("Telegram not configured (missing token or chat_id); skipping")
+        return
+
+    site_url = f"https://samiryuja.dev/projects/futbol-report?run={timestamp}"
+    header = f"⚽ New Futbol Report\nCompare all four models: {site_url}\n\n"
+
+    # Telegram's per-message limit is 4096 characters.
+    # Reserve room for the header and a truncation footer.
+    max_body = 4096 - len(header) - 80
+    body = report
+    if len(body) > max_body:
+        body = body[:max_body].rstrip() + f"\n\n…(truncated — full report: {site_url})"
+
+    try:
+        resp = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={
+                "chat_id": chat_id,
+                "text": header + body,
+                "disable_web_page_preview": True,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        print("Sent report to Telegram")
+    except Exception as e:
+        print(f"Telegram send failed: {e}")
 
 def run_pipeline() -> str:
     """The actual work: search, generate, save. Returns the run timestamp."""
@@ -163,7 +198,10 @@ def run_pipeline() -> str:
             continue
 
     if reports:
-        save_run_to_redis(timestamp, reports)
+            save_run_to_redis(timestamp, reports)
+            primary_model = "anthropic/claude-sonnet-4.5"
+            if primary_model in reports:
+                send_to_telegram(timestamp, reports[primary_model])
 
     print(f"All done. Reports for timestamp {timestamp}")
     return timestamp

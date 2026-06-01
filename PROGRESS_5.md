@@ -166,24 +166,41 @@ Real, observable, comparative findings — substance for the blog post and inter
 
 ## Known Issues / Future Improvements (Backlog)
 
+### Model upgrade cadence
+
+Review the `MODELS` constant in `main.py` once a quarter. Frontier model versions ship every few months; pinned slugs go stale. When bumping a slug (e.g. Claude Sonnet 4.5 → 4.6), do it as one deliberate commit with a clear message — that commit becomes the marker separating "old generation" runs from "new generation" runs in the history dropdown. Document major bumps in this tracker so the comparison's reproducibility story stays intact.
+
+### Service credit top-ups
+
+Brave, OpenRouter, and Vercel Redis are pay-as-you-go. Set a recurring calendar reminder (~monthly) to check balances and top up if low:
+
+- OpenRouter: openrouter.ai/settings/credits
+- Brave: Brave Search dashboard
+- Vercel: Storage tab → Redis store → usage
+
 ### Voting integrity (today)
+
 Currently per-page-load only — refresh re-enables voting. Use `localStorage` to enforce one vote per browser per run.
 
 ### Cosmetic polish
+
 - **Report cell sizing/layout** — reports are different lengths so the grid reads as a tall 2-column stack. Cap cell height with internal scroll, or tabs. Not urgent.
 - **Projects page placeholder** — "/projects" still says "Showcase your projects with a hero image (16 x 9)." One-line edit in `app/projects/page.tsx`. Quick.
 
 ### Optimizations (not needed at current scale)
+
 - **`getVotes` uses `KEYS`** — scans the whole keyspace. Fine at current scale.
 - **Page revalidation (ISR)** — comparison page is `force-dynamic`. ISR would cut Redis reads. Optimization only.
 - **Slow Lambda runtime (~4 min)** — sequential Brave + sequential model calls. Could be parallelized. Not urgent at this cadence.
 - **Thin-search-run handling** — fetch full page content for top results (Firecrawl/readability) when Brave snippets are sparse.
 
 ### Safety / hygiene
+
 - **One-time git history secret scan** on both repos before broader publicity. The CI scanner being added today protects future commits, but should also confirm history is clean.
 - **Secrets Manager (vs. env vars)** — current env vars are accepted at this scale. The hardening tier is AWS Secrets Manager (encrypted, rotatable, audited). The "how would you harden it?" answer.
 
 ### Hydration warning (in flight)
+
 A "Recoverable Error" hydration mismatch showed up after the page writeup went in. The diff references Headless UI's portal markup — likely the template's search modal interacting with a browser extension, not our code. Confirm in incognito; if clean there, ignore.
 
 ---
